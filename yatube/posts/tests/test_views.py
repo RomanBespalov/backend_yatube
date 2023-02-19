@@ -32,51 +32,14 @@ POST_TEXT_OLD = 'First check'
 POST_TEXT_NEW = 'Second check'
 POST_USER = 'author_2'
 
-
-class PostsViewsTests(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.author = User.objects.create_user(username=AUTHOR_USERNAME)
-        cls.post = Post.objects.create(
-            author=cls.author,
-            text=POST_TEXT,
-        )
-        cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION,
-        )
-
-    def setUp(self):
-        self.user = User.objects.create_user(username=USER_USERNAME)
-        self.author_client = Client()
-        self.author_client.force_login(self.author)
-        cache.clear()
-
-    def test_pages_uses_correct_template(self):
-        """URL-адрес использует соответствующий шаблон."""
-        templates_pages_names = {
-            cs.INDEX_TEMPLATE: reverse(cs.INDEX_URL),
-            cs.GROUP_TEMPLATE: (
-                reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
-            ),
-            cs.PROFILE_TEMPLATE: (
-                reverse(cs.PROFILE_URL, kwargs={'username': self.author})
-            ),
-            cs.POST_DETAIL_TEMPLATE: (
-                reverse(cs.POST_DETAIL_URL, kwargs={'post_id': self.post.id})
-            ),
-            cs.POST_CREATE_TEMPLATE: reverse(cs.POST_CREATE_URL),
-            cs.POST_EDIT_TEMPLATE: (
-                reverse(cs.POST_EDIT_URL, kwargs={'post_id': self.post.id})
-            ),
-        }
-
-        for template, reverse_name in templates_pages_names.items():
-            with self.subTest(reverse_name=reverse_name):
-                response = self.author_client.get(reverse_name)
-                self.assertTemplateUsed(response, template)
+SMALL_GIF = (
+    b'\x47\x49\x46\x38\x39\x61\x02\x00'
+    b'\x01\x00\x80\x00\x00\x00\x00\x00'
+    b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+    b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+    b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+    b'\x0A\x00\x3B'
+)
 
 
 class PostPagesTests(TestCase):
@@ -200,17 +163,9 @@ class PictureTests(TestCase):
     def test_create_picture_post(self):
         """Валидная форма создает пост в Post.
         После этого идет проверка, что картинка существует на страницах."""
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
         uploaded = SimpleUploadedFile(
             name='small.gif',
-            content=small_gif,
+            content=SMALL_GIF,
             content_type='image/gif'
         )
         form_data = {
@@ -221,7 +176,7 @@ class PictureTests(TestCase):
         self.author_client.post(
             reverse(cs.POST_CREATE_URL),
             data=form_data,
-            follow=True
+            follow=True,
         )
         post = Post.objects.get(pk=2)
         self.assertEqual(post.image, 'posts/small.gif')

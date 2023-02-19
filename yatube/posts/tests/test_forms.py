@@ -19,6 +19,17 @@ POST_TEXT = 'Test post'
 GROUP_TITLE = 'Test group'
 GROUP_SLUG = 'slug1'
 GROUP_DESCRIPTION = 'Test description'
+NEW_USER = 'NewUser'
+SMALL_GIF = (
+    b'\x47\x49\x46\x38\x39\x61\x02\x00'
+    b'\x01\x00\x80\x00\x00\x00\x00\x00'
+    b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+    b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+    b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+    b'\x0A\x00\x3B'
+)
+IMAGE_NAME = 'small.gif'
+IMAGE_FOLDER = 'posts/small.gif'
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -29,6 +40,7 @@ class PostFormTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.author = User.objects.create_user(username=POST_USER)
+        cls.user = User.objects.create_user(username=NEW_USER)
         cls.post = Post.objects.create(
             author=cls.author,
             text=POST_TEXT,
@@ -47,26 +59,17 @@ class PostFormTests(TestCase):
 
     def setUp(self):
         self.guest_client = Client()
-        self.user = User.objects.create_user(username='HasNoName')
         self.author_client = Client()
         self.author_client.force_login(self.author)
         self.authorized_client = Client()
-        self.authorized_client.force_login(self.author)
+        self.authorized_client.force_login(self.user)
 
     def test_create_post(self):
         """Валидная форма создает пост в Post."""
         posts_count = Post.objects.count()
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
         uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=small_gif,
+            name=IMAGE_NAME,
+            content=SMALL_GIF,
             content_type='image/gif'
         )
         form_data = {
@@ -89,7 +92,7 @@ class PostFormTests(TestCase):
         self.assertEqual(first_object.text, POST_TEXT_OLD)
         self.assertEqual(first_object.group, self.group)
         self.assertEqual(first_object.author, self.author)
-        self.assertEqual(first_object.image, 'posts/small.gif')
+        self.assertEqual(first_object.image, IMAGE_FOLDER)
 
     def test_edit_post(self):
         """Валидная форма редактирует пост в Post."""
@@ -108,7 +111,7 @@ class PostFormTests(TestCase):
         self.assertEqual(update_object.group, self.group)
         self.assertEqual(update_object.author, self.author)
 
-    def test_make_comment(self):
+    def test_make_comment_authorized_client(self):
         '''Комментировать посты может только авторизованный пользователь,
         После успешной отправки комментарий появляется на странице поста'''
         form_data = {
@@ -123,6 +126,8 @@ class PostFormTests(TestCase):
             text='Новый комментарий',
         ).exists())
 
+    def test_make_comment_guest_client(self):
+        '''Анонимный пользователь не может создать комментарий.'''
         form_data_2 = {
             'text': 'Комментарий которого нет'
         }

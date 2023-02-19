@@ -9,20 +9,19 @@ from .utils import pagination
 
 @cache_page(20)
 def index(request):
-    posts = Post.objects.select_related('author', 'group').all()
-    page_obj = pagination(request, posts)
     context = {
-        'page_obj': page_obj,
+        'page_obj': pagination(
+            request,
+            Post.objects.select_related('author', 'group').all()
+        ),
     }
     return render(request, 'posts/index.html', context)
 
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = group.posts.all()
-    page_obj = pagination(request, posts)
     context = {
-        'page_obj': page_obj,
+        'page_obj': pagination(request, group.posts.all()),
         'group': group,
     }
     return render(request, 'posts/group_list.html', context)
@@ -32,16 +31,14 @@ def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts_profile_list = Post.objects.filter(author=author)
     page_obj = pagination(request, posts_profile_list)
-    if request.user.is_authenticated:
-        following = Follow.objects.filter(
-            user=request.user, author=author
-        ).exists()
-    else:
-        following = False
     context = {
         'page_obj': page_obj,
         'author': author,
-        'following': following,
+        'following': (request.user.is_authenticated
+                      and request.user != username
+                      and Follow.objects.filter(
+                              user=request.user, author=author
+                          ).exists()),
     }
     return render(request, 'posts/profile.html', context)
 
@@ -49,11 +46,9 @@ def profile(request, username):
 def post_detail(request, post_id):
     template = 'posts/post_detail.html'
     post = Post.objects.get(id=post_id)
-    comments = post.comments.all()
     form = CommentForm()
     context = {
         'post': post,
-        'comments': comments,
         'form': form,
     }
     return render(request, template, context)
@@ -125,18 +120,16 @@ def follow_index(request):
 def profile_follow(request, username):
     # Подписаться на автора
     author = get_object_or_404(User, username=username)
-    if request.user != author and not request.user.follower.filter(
-        author=author
-    ).exists():
-        Follow.objects.create(user=request.user, author=author)
+    if request.user != author:
+        Follow.objects.get_or_create(user=request.user, author=author)
         return redirect('posts:follow_index')
-    return redirect('posts:profile', username=username)
+    return redirect('posts:index')
 
 
 @login_required
 def profile_unfollow(request, username):
     # Дизлайк, отписка
-    author = get_object_or_404(User, username=username)
-    follow = get_object_or_404(Follow, user=request.user, author=author)
-    follow.delete()
+    get_object_or_404(
+        Follow, user=request.user, author__username=username
+    ).delete()
     return redirect('posts:follow_index')

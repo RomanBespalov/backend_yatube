@@ -1,13 +1,14 @@
 from django.test import TestCase
 
-from posts.models import Group, Post, User
+from posts.models import Comment, Follow, Group, Post, User
 
 
 class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='auth')
+        cls.author = User.objects.create_user(username='auth')
+        cls.user = User.objects.create_user(username='user')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='Тестовый слаг',
@@ -17,14 +18,26 @@ class PostModelTest(TestCase):
             author=cls.user,
             text='Тестовый пост',
         )
+        cls.comment = Comment.objects.create(
+            author=cls.author,
+            text='Тестовый комментарий',
+        )
+        cls.follow = Follow.objects.create(
+            author=cls.author,
+            user=cls.user,
+        )
 
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         post = PostModelTest.post
         group = PostModelTest.group
+        comment = PostModelTest.comment
+        follow = PostModelTest.follow
         field_strings = {
             post.text[:15]: str(post),
             group.title: str(group),
+            comment.text[:15]: str(comment),
+            self.author.username: str(follow),
         }
         for field, expected_value in field_strings.items():
             with self.subTest(field=field):
