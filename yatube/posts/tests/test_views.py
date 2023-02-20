@@ -17,48 +17,32 @@ from posts.forms import PostForm
 POSTS_PER_PAGE = 10
 POSTS_SECOND_PAGE = 1
 
-AUTHOR_USERNAME = 'TestAuthor'
-USER_USERNAME = 'TestUser'
-GROUP_TITLE = 'Тестовая группа'
-GROUP_SLUG = 'test-slug'
-GROUP_DESCRIPTION = 'Тестовое описание'
-POST_TEXT = 'Тестовый текст'
-
 PAG_INDEX_URL = reverse('posts:index')
-PAG_GROUP_LIST_URL = reverse('posts:group_list', args=[GROUP_SLUG])
-PAG_PROFILE_URL = reverse('posts:profile', args=[AUTHOR_USERNAME])
+PAG_GROUP_LIST_URL = reverse('posts:group_list', args=[cs.GROUP_SLUG])
+PAG_PROFILE_URL = reverse('posts:profile', args=[cs.AUTHOR_NAME])
 
 POST_TEXT_OLD = 'First check'
 POST_TEXT_NEW = 'Second check'
 POST_USER = 'author_2'
-
-SMALL_GIF = (
-    b'\x47\x49\x46\x38\x39\x61\x02\x00'
-    b'\x01\x00\x80\x00\x00\x00\x00\x00'
-    b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-    b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-    b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-    b'\x0A\x00\x3B'
-)
 
 
 class PostPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.author = User.objects.create_user(username=AUTHOR_USERNAME)
+        cls.author = User.objects.create_user(username=cs.AUTHOR_NAME)
+        cls.user = User.objects.create_user(username=cs.USER_NAME)
         cls.post = Post.objects.create(
             author=cls.author,
-            text=POST_TEXT,
+            text=cs.POST_TEXT,
         )
         cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION,
+            title=cs.GROUP_TITLE,
+            slug=cs.GROUP_SLUG,
+            description=cs.GROUP_DESCRIPTION,
         )
 
     def setUp(self):
-        self.user = User.objects.create_user(username=USER_USERNAME)
         self.author_client = Client()
         self.author_client.force_login(self.user)
         self.authorized_client = Client()
@@ -87,20 +71,20 @@ class PaginatorViewsTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.author = User.objects.create_user(username=AUTHOR_USERNAME)
+        cls.author = User.objects.create_user(username=cs.AUTHOR_NAME)
+        cls.user = User.objects.create_user(username=cs.USER_NAME)
         cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION,
+            title=cs.GROUP_TITLE,
+            slug=cs.GROUP_SLUG,
+            description=cs.GROUP_DESCRIPTION,
         )
         Post.objects.bulk_create([
             Post(
-                text=f'{POST_TEXT} {i}', author=cls.author, group=cls.group
+                text=f'{cs.POST_TEXT} {i}', author=cls.author, group=cls.group
             ) for i in range(POSTS_PER_PAGE + POSTS_SECOND_PAGE)
         ])
 
     def setUp(self):
-        self.user = User.objects.create_user(username=USER_USERNAME)
         self.author_client = Client()
         self.author_client.force_login(self.user)
 
@@ -142,12 +126,12 @@ class PictureTests(TestCase):
         cls.author = User.objects.create_user(username=POST_USER)
         cls.post = Post.objects.create(
             author=cls.author,
-            text=POST_TEXT,
+            text=cs.POST_TEXT,
         )
         cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION,
+            title=cs.GROUP_TITLE,
+            slug=cs.GROUP_SLUG,
+            description=cs.GROUP_DESCRIPTION,
         )
         cls.form = PostForm()
 
@@ -164,8 +148,8 @@ class PictureTests(TestCase):
         """Валидная форма создает пост в Post.
         После этого идет проверка, что картинка существует на страницах."""
         uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=SMALL_GIF,
+            name=cs.IMAGE_NAME,
+            content=cs.SMALL_GIF,
             content_type='image/gif'
         )
         form_data = {
@@ -179,48 +163,48 @@ class PictureTests(TestCase):
             follow=True,
         )
         post = Post.objects.get(pk=2)
-        self.assertEqual(post.image, 'posts/small.gif')
+        self.assertEqual(post.image, cs.IMAGE_FOLDER)
         cache.clear()
         response_1 = self.author_client.get(reverse(cs.INDEX_URL))
         first_object = response_1.context['page_obj'].object_list[0].image
-        self.assertEqual(first_object, 'posts/small.gif')
+        self.assertEqual(first_object, cs.IMAGE_FOLDER)
 
         response_2 = self.author_client.get(
             reverse(cs.PROFILE_URL, kwargs={'username': self.author})
         )
         second_object = response_2.context['page_obj'].object_list[0].image
-        self.assertEqual(second_object, 'posts/small.gif')
+        self.assertEqual(second_object, cs.IMAGE_FOLDER)
 
         response_3 = self.author_client.get(
             reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
         )
         third_object = response_3.context['page_obj'].object_list[0].image
-        self.assertEqual(third_object, 'posts/small.gif')
+        self.assertEqual(third_object, cs.IMAGE_FOLDER)
 
         response_4 = self.author_client.get(
             reverse(cs.POST_DETAIL_URL, kwargs={'post_id': 2})
         )
         fourth_object = response_4.context.get('post').image
-        self.assertEqual(fourth_object, 'posts/small.gif')
+        self.assertEqual(fourth_object, cs.IMAGE_FOLDER)
 
 
 class ProfileFollowTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.author = User.objects.create_user(username=AUTHOR_USERNAME)
+        cls.author = User.objects.create_user(username=cs.AUTHOR_NAME)
+        cls.user = User.objects.create_user(username=cs.USER_NAME)
         cls.post = Post.objects.create(
             author=cls.author,
-            text=POST_TEXT,
+            text=cs.POST_TEXT,
         )
         cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION,
+            title=cs.GROUP_TITLE,
+            slug=cs.GROUP_SLUG,
+            description=cs.GROUP_DESCRIPTION,
         )
 
     def setUp(self):
-        self.user = User.objects.create_user(username=USER_USERNAME)
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -238,7 +222,8 @@ class ProfileFollowTest(TestCase):
         self.assertEqual(author, [self.author])
         response_1 = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertEqual(
-            response_1.context.get('page_obj').object_list[0].text, POST_TEXT
+            response_1.context.get('page_obj').object_list[0].text,
+            cs.POST_TEXT
         )
 
         follow = Follow.objects.get(user=self.user, author=self.author)
@@ -246,5 +231,5 @@ class ProfileFollowTest(TestCase):
         assert follow not in Follow.objects.filter(user=self.user)
         response_2 = self.authorized_client.get(reverse('posts:follow_index'))
         self.assertNotIn(
-            POST_TEXT, response_2.context.get('page_obj').object_list
+            cs.POST_TEXT, response_2.context.get('page_obj').object_list
         )

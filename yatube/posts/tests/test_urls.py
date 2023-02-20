@@ -12,19 +12,19 @@ class PostsURLTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.author = User.objects.create_user(username='author')
+        cls.author = User.objects.create_user(username=cs.AUTHOR_NAME)
         cls.post = Post.objects.create(
             author=cls.author,
-            text='Test post',
+            text=cs.POST_TEXT,
         )
         cls.group = Group.objects.create(
-            title='Test group',
-            slug='slug1',
-            description='Test description',
+            title=cs.GROUP_TITLE,
+            slug=cs.GROUP_SLUG,
+            description=cs.GROUP_DESCRIPTION,
         )
 
         cls.guest_client = Client()
-        cls.user = User.objects.create_user(username='HasNoName')
+        cls.user = User.objects.create_user(username=cs.USER_NAME)
         cls.authorized_client = Client()
         cls.authorized_client.force_login(cls.user)
         cls.author_client = Client()

@@ -14,22 +14,10 @@ from posts.tests import constants as cs
 
 POST_TEXT_OLD = 'First check'
 POST_TEXT_NEW = 'Second check'
-POST_USER = 'author'
-POST_TEXT = 'Test post'
-GROUP_TITLE = 'Test group'
-GROUP_SLUG = 'slug1'
-GROUP_DESCRIPTION = 'Test description'
-NEW_USER = 'NewUser'
-SMALL_GIF = (
-    b'\x47\x49\x46\x38\x39\x61\x02\x00'
-    b'\x01\x00\x80\x00\x00\x00\x00\x00'
-    b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-    b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-    b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-    b'\x0A\x00\x3B'
-)
-IMAGE_NAME = 'small.gif'
-IMAGE_FOLDER = 'posts/small.gif'
+
+COMMENT_TEXT_1 = 'Новый комментарий'
+COMMENT_TEXT_2 = 'Комментарий которого нет'
+
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -39,16 +27,16 @@ class PostFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.author = User.objects.create_user(username=POST_USER)
-        cls.user = User.objects.create_user(username=NEW_USER)
+        cls.author = User.objects.create_user(username=cs.AUTHOR_NAME)
+        cls.user = User.objects.create_user(username=cs.USER_NAME)
         cls.post = Post.objects.create(
             author=cls.author,
-            text=POST_TEXT,
+            text=cs.POST_TEXT,
         )
         cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION,
+            title=cs.GROUP_TITLE,
+            slug=cs.GROUP_SLUG,
+            description=cs.GROUP_DESCRIPTION,
         )
         cls.form = PostForm()
 
@@ -68,8 +56,8 @@ class PostFormTests(TestCase):
         """Валидная форма создает пост в Post."""
         posts_count = Post.objects.count()
         uploaded = SimpleUploadedFile(
-            name=IMAGE_NAME,
-            content=SMALL_GIF,
+            name=cs.IMAGE_NAME,
+            content=cs.SMALL_GIF,
             content_type='image/gif'
         )
         form_data = {
@@ -92,7 +80,7 @@ class PostFormTests(TestCase):
         self.assertEqual(first_object.text, POST_TEXT_OLD)
         self.assertEqual(first_object.group, self.group)
         self.assertEqual(first_object.author, self.author)
-        self.assertEqual(first_object.image, IMAGE_FOLDER)
+        self.assertEqual(first_object.image, cs.IMAGE_FOLDER)
 
     def test_edit_post(self):
         """Валидная форма редактирует пост в Post."""
@@ -115,7 +103,7 @@ class PostFormTests(TestCase):
         '''Комментировать посты может только авторизованный пользователь,
         После успешной отправки комментарий появляется на странице поста'''
         form_data = {
-            'text': 'Новый комментарий'
+            'text': COMMENT_TEXT_1,
         }
         self.authorized_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
@@ -123,13 +111,13 @@ class PostFormTests(TestCase):
             follow=True,
         )
         self.assertTrue(Comment.objects.filter(
-            text='Новый комментарий',
+            text=COMMENT_TEXT_1,
         ).exists())
 
     def test_make_comment_guest_client(self):
         '''Анонимный пользователь не может создать комментарий.'''
         form_data_2 = {
-            'text': 'Комментарий которого нет'
+            'text': COMMENT_TEXT_2,
         }
         self.guest_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
@@ -137,5 +125,5 @@ class PostFormTests(TestCase):
             follow=True,
         )
         self.assertFalse(Comment.objects.filter(
-            text='Комментарий которого нет'
+            text=COMMENT_TEXT_2,
         ).exists())

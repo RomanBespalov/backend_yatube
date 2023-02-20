@@ -1,18 +1,19 @@
 from django.test import TestCase
 
 from posts.models import Comment, Follow, Group, Post, User
+from posts.tests import constants as cs
 
 
 class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.author = User.objects.create_user(username='auth')
-        cls.user = User.objects.create_user(username='user')
+        cls.author = User.objects.create_user(username=cs.AUTHOR_NAME)
+        cls.user = User.objects.create_user(username=cs.USER_NAME)
         cls.group = Group.objects.create(
-            title='Тестовая группа',
-            slug='Тестовый слаг',
-            description='Тестовое описание',
+            title=cs.GROUP_TITLE,
+            slug=cs.GROUP_SLUG,
+            description=cs.GROUP_DESCRIPTION,
         )
         cls.post = Post.objects.create(
             author=cls.user,

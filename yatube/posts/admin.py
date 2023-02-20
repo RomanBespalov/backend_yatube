@@ -31,8 +31,10 @@ class CommentAdmin(admin.ModelAdmin):
         'text',
         'author',
         'post',
+        'created',
     )
     search_fields = ('text',)
+    list_filter = ('created',)
 
 
 class FollowAdmin(admin.ModelAdmin):
@@ -40,6 +42,7 @@ class FollowAdmin(admin.ModelAdmin):
         'user',
         'author',
     )
+    search_fields = ('user__username',)
 
 
 admin.site.register(Post, PostAdmin)

@@ -74,10 +74,10 @@ class Comment(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='comments',
-        verbose_name='автор',
+        verbose_name='автор комментария',
     )
     text = models.TextField(
-        verbose_name='текст',
+        verbose_name='текст комментария',
         help_text='Укажите текст комментария',
     )
     created = models.DateTimeField(
