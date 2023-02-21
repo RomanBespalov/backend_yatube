@@ -113,16 +113,3 @@ class PostsURLTests(TestCase):
                 cs.POST_DETAIL_URL, kwargs={'post_id': self.post.id}
             )
         )
-
-    def test_check_work_cache(self):
-        """Проверка работы кэша на главной странице."""
-        response_1 = self.guest_client.get(reverse(cs.INDEX_URL))
-        Post.objects.create(
-            author=self.author,
-            text='Test post',
-        )
-        response_2 = self.guest_client.get(reverse(cs.INDEX_URL))
-        self.assertEqual(response_1.content, response_2.content)
-        cache.clear()
-        response_3 = self.guest_client.get(reverse(cs.INDEX_URL))
-        self.assertNotEqual(response_1.content, response_3.content)

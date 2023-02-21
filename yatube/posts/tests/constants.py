@@ -16,11 +16,12 @@ AUTHOR_NAME = 'author'
 USER_NAME = 'user'
 POST_TEXT = 'Test post'
 GROUP_TITLE = 'Test group'
-GROUP_SLUG = 'slug1'
+GROUP_SLUG = 'slug_1'
 GROUP_DESCRIPTION = 'Test description'
+POST_COMMENT = 'Тестовый комментарий'
 
 IMAGE_NAME = 'small.gif'
-IMAGE_FOLDER = 'posts/small.gif'
+IMAGE_FOLDER = 'posts/'
 
 SMALL_GIF = (
     b'\x47\x49\x46\x38\x39\x61\x02\x00'

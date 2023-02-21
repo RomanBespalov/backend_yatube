@@ -18,6 +18,7 @@ POST_TEXT_NEW = 'Second check'
 COMMENT_TEXT_1 = 'Новый комментарий'
 COMMENT_TEXT_2 = 'Комментарий которого нет'
 
+ADD_COMMENT_URL = 'posts:add_comment'
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -80,7 +81,7 @@ class PostFormTests(TestCase):
         self.assertEqual(first_object.text, POST_TEXT_OLD)
         self.assertEqual(first_object.group, self.group)
         self.assertEqual(first_object.author, self.author)
-        self.assertEqual(first_object.image, cs.IMAGE_FOLDER)
+        self.assertEqual(first_object.image, cs.IMAGE_FOLDER + cs.IMAGE_NAME)
 
     def test_edit_post(self):
         """Валидная форма редактирует пост в Post."""
@@ -106,7 +107,7 @@ class PostFormTests(TestCase):
             'text': COMMENT_TEXT_1,
         }
         self.authorized_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            reverse(ADD_COMMENT_URL, kwargs={'post_id': self.post.id}),
             data=form_data,
             follow=True,
         )
@@ -120,7 +121,7 @@ class PostFormTests(TestCase):
             'text': COMMENT_TEXT_2,
         }
         self.guest_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            reverse(ADD_COMMENT_URL, kwargs={'post_id': self.post.id}),
             data=form_data_2,
             follow=True,
         )

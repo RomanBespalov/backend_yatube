@@ -17,11 +17,11 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовый пост',
+            text=cs.POST_TEXT,
         )
         cls.comment = Comment.objects.create(
             author=cls.author,
-            text='Тестовый комментарий',
+            text=cs.POST_COMMENT,
         )
         cls.follow = Follow.objects.create(
             author=cls.author,
@@ -38,7 +38,8 @@ class PostModelTest(TestCase):
             post.text[:15]: str(post),
             group.title: str(group),
             comment.text[:15]: str(comment),
-            self.author.username: str(follow),
+            f'Пользователь {self.user.username}'
+            f' подписан на автора {self.author.username}': str(follow),
         }
         for field, expected_value in field_strings.items():
             with self.subTest(field=field):
@@ -48,14 +49,38 @@ class PostModelTest(TestCase):
         """Проверяем, что у моделей корректно
         работает verbose_name и help_text."""
         post = PostModelTest.post
-        fields_verboses = {
+        fields_verboses_1 = {
             'text': 'текст',
             'group': 'название группы',
         }
-        for field, expected_value in fields_verboses.items():
+        for field, expected_value in fields_verboses_1.items():
             with self.subTest(field=field):
                 self.assertEqual(
                     post._meta.get_field(field).verbose_name, expected_value
+                )
+
+        comment = PostModelTest.comment
+        fields_verboses_2 = {
+            'post': 'пост',
+            'author': 'автор комментария',
+            'text': 'текст комментария',
+
+        }
+        for field, expected_value in fields_verboses_2.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    comment._meta.get_field(field).verbose_name, expected_value
+                )
+
+        follow = PostModelTest.follow
+        fields_verboses_3 = {
+            'user': 'подписчик',
+            'author': 'блогер',
+        }
+        for field, expected_value in fields_verboses_3.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    follow._meta.get_field(field).verbose_name, expected_value
                 )
 
         fields_help = {

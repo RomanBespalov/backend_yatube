@@ -121,4 +121,7 @@ class Follow(models.Model):
         ]
 
     def __str__(self):
-        return self.author.username
+        text = 'Пользователь {follower_name} подписан на автора {author_name}'
+        return text.format(
+            follower_name=self.user.username, author_name=self.author.username
+        )

@@ -76,7 +76,7 @@ def post_edit(request, post_id):
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
-        instance=post
+        instance=post,
     )
     if request.user != post.author:
         return redirect('posts:post_detail', post_id)

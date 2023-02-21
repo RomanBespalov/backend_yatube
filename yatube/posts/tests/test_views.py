@@ -25,35 +25,51 @@ POST_TEXT_OLD = 'First check'
 POST_TEXT_NEW = 'Second check'
 POST_USER = 'author_2'
 
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.author = User.objects.create_user(username=cs.AUTHOR_NAME)
         cls.user = User.objects.create_user(username=cs.USER_NAME)
-        cls.post = Post.objects.create(
-            author=cls.author,
-            text=cs.POST_TEXT,
-        )
         cls.group = Group.objects.create(
             title=cs.GROUP_TITLE,
             slug=cs.GROUP_SLUG,
             description=cs.GROUP_DESCRIPTION,
         )
+        cls.post = Post.objects.create(
+            author=cls.author,
+            text=cs.POST_TEXT,
+            group=cls.group,
+            image=SimpleUploadedFile(
+                name=cs.IMAGE_NAME,
+                content=cs.SMALL_GIF,
+                content_type='image/gif',
+            ),
+        )
+        cls.form = PostForm()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.author_client = Client()
-        self.author_client.force_login(self.user)
+        self.author_client.force_login(self.author)
         self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        self.authorized_client.force_login(self.author)
+        self.guest_client = Client()
 
     def test_post_create_page_show_correct_context(self):
         """Шаблон post_create сформирован с правильным контекстом."""
         response = self.author_client.get(reverse(cs.POST_CREATE_URL))
         self.assertIsInstance(response.context.get('form'), PostForm)
 
-    def test_post_detail_pages_show_correct_context(self):
+    def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = (self.author_client.get(
             reverse(cs.POST_DETAIL_URL, kwargs={'post_id': self.post.id}))
@@ -65,6 +81,76 @@ class PostPagesTests(TestCase):
         self.assertEqual(
             response.context.get('post').group, self.post.group
         )
+        self.assertEqual(
+            response.context.get('post').image, self.post.image
+        )
+
+    def test_profile_page_show_correct_context(self):
+        """Шаблон profile сформирован с правильным контекстом."""
+        response = self.authorized_client.get(
+            reverse(cs.PROFILE_URL, kwargs={'username': self.author})
+        )
+        self.assertEqual(response.context['page_obj'][0].text, self.post.text)
+        self.assertEqual(response.context['page_obj'][0].author, self.author)
+        self.assertEqual(response.context['page_obj'][0].group, self.group)
+        self.assertEqual(
+            response.context['page_obj'][0].image, self.post.image
+        )
+
+    def test_group_list_page_show_correct_context(self):
+        """Шаблон group_list сформирован с правильным контекстом."""
+        response = self.author_client.get(
+            reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
+        )
+        self.assertEqual(response.context['page_obj'][0].group, self.group)
+        self.assertEqual(response.context['page_obj'][0].text, self.post.text)
+        self.assertEqual(response.context['page_obj'][0].author, self.author)
+        self.assertEqual(
+            response.context['page_obj'][0].image, self.post.image
+        )
+
+    def test_check_work_cache(self):
+        """Проверка работы кэша на главной странице."""
+        response_1 = self.guest_client.get(reverse(cs.INDEX_URL))
+        Post.objects.create(
+            author=self.author,
+            text='Test post',
+        )
+        response_2 = self.guest_client.get(reverse(cs.INDEX_URL))
+        self.assertEqual(response_1.content, response_2.content)
+        cache.clear()
+        response_3 = self.guest_client.get(reverse(cs.INDEX_URL))
+        self.assertNotEqual(response_1.content, response_3.content)
+
+    def test_create_picture_post(self):
+        """Проверка, что картинка существует на страницах."""
+        self.author_client.post(
+            reverse(cs.POST_CREATE_URL)
+        )
+        post = Post.objects.get(pk=self.post.id)
+        self.assertEqual(post.image, cs.IMAGE_FOLDER + cs.IMAGE_NAME)
+        cache.clear()
+        response_1 = self.author_client.get(reverse(cs.INDEX_URL))
+        first_object = response_1.context['page_obj'].object_list[0].image
+        self.assertEqual(first_object, cs.IMAGE_FOLDER + cs.IMAGE_NAME)
+
+        response_2 = self.author_client.get(
+            reverse(cs.PROFILE_URL, kwargs={'username': self.author})
+        )
+        second_object = response_2.context['page_obj'].object_list[0].image
+        self.assertEqual(second_object, cs.IMAGE_FOLDER + cs.IMAGE_NAME)
+
+        response_3 = self.author_client.get(
+            reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
+        )
+        third_object = response_3.context['page_obj'].object_list[0].image
+        self.assertEqual(third_object, cs.IMAGE_FOLDER + cs.IMAGE_NAME)
+
+        response_4 = self.author_client.get(
+            reverse(cs.POST_DETAIL_URL, kwargs={'post_id': self.post.id})
+        )
+        fourth_object = response_4.context.get('post').image
+        self.assertEqual(fourth_object, cs.IMAGE_FOLDER + cs.IMAGE_NAME)
 
 
 class PaginatorViewsTest(TestCase):
@@ -113,79 +199,6 @@ class PaginatorViewsTest(TestCase):
                     self.assertIsNotNone(page_obj)
                     self.assertIsInstance(page_obj, Page)
                     self.assertEqual(len(page_obj.object_list), mount)
-
-
-TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
-
-
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class PictureTests(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.author = User.objects.create_user(username=POST_USER)
-        cls.post = Post.objects.create(
-            author=cls.author,
-            text=cs.POST_TEXT,
-        )
-        cls.group = Group.objects.create(
-            title=cs.GROUP_TITLE,
-            slug=cs.GROUP_SLUG,
-            description=cs.GROUP_DESCRIPTION,
-        )
-        cls.form = PostForm()
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.author_client = Client()
-        self.author_client.force_login(self.author)
-
-    def test_create_picture_post(self):
-        """Валидная форма создает пост в Post.
-        После этого идет проверка, что картинка существует на страницах."""
-        uploaded = SimpleUploadedFile(
-            name=cs.IMAGE_NAME,
-            content=cs.SMALL_GIF,
-            content_type='image/gif'
-        )
-        form_data = {
-            'text': POST_TEXT_OLD,
-            'group': self.group.id,
-            'image': uploaded,
-        }
-        self.author_client.post(
-            reverse(cs.POST_CREATE_URL),
-            data=form_data,
-            follow=True,
-        )
-        post = Post.objects.get(pk=2)
-        self.assertEqual(post.image, cs.IMAGE_FOLDER)
-        cache.clear()
-        response_1 = self.author_client.get(reverse(cs.INDEX_URL))
-        first_object = response_1.context['page_obj'].object_list[0].image
-        self.assertEqual(first_object, cs.IMAGE_FOLDER)
-
-        response_2 = self.author_client.get(
-            reverse(cs.PROFILE_URL, kwargs={'username': self.author})
-        )
-        second_object = response_2.context['page_obj'].object_list[0].image
-        self.assertEqual(second_object, cs.IMAGE_FOLDER)
-
-        response_3 = self.author_client.get(
-            reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
-        )
-        third_object = response_3.context['page_obj'].object_list[0].image
-        self.assertEqual(third_object, cs.IMAGE_FOLDER)
-
-        response_4 = self.author_client.get(
-            reverse(cs.POST_DETAIL_URL, kwargs={'post_id': 2})
-        )
-        fourth_object = response_4.context.get('post').image
-        self.assertEqual(fourth_object, cs.IMAGE_FOLDER)
 
 
 class ProfileFollowTest(TestCase):
