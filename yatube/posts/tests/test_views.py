@@ -90,6 +90,7 @@ class PostPagesTests(TestCase):
         response = self.authorized_client.get(
             reverse(cs.PROFILE_URL, kwargs={'username': self.author})
         )
+        self.assertEqual(response.context['author'], self.author)
         self.assertEqual(response.context['page_obj'][0].text, self.post.text)
         self.assertEqual(response.context['page_obj'][0].author, self.author)
         self.assertEqual(response.context['page_obj'][0].group, self.group)
@@ -101,6 +102,13 @@ class PostPagesTests(TestCase):
         """Шаблон group_list сформирован с правильным контекстом."""
         response = self.author_client.get(
             reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
+        )
+        self.assertEqual(
+            response.context['page_obj'][0].group.title, self.group.title
+        )
+        self.assertEqual(
+            response.context['page_obj'][0].group.description,
+            self.group.description
         )
         self.assertEqual(response.context['page_obj'][0].group, self.group)
         self.assertEqual(response.context['page_obj'][0].text, self.post.text)
