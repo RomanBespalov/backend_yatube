@@ -92,8 +92,12 @@ class PostPagesTests(TestCase):
         )
         self.assertEqual(response.context['author'], self.author)
         self.assertEqual(response.context['page_obj'][0].text, self.post.text)
-        self.assertEqual(response.context['page_obj'][0].author, self.author)
-        self.assertEqual(response.context['page_obj'][0].group, self.group)
+        self.assertEqual(
+            response.context['page_obj'][0].author, self.post.author
+        )
+        self.assertEqual(
+            response.context['page_obj'][0].group, self.post.group
+        )
         self.assertEqual(
             response.context['page_obj'][0].image, self.post.image
         )
@@ -103,19 +107,26 @@ class PostPagesTests(TestCase):
         response = self.author_client.get(
             reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
         )
-        self.assertEqual(
-            response.context['page_obj'][0].group.title, self.group.title
-        )
-        self.assertEqual(
-            response.context['page_obj'][0].group.description,
-            self.group.description
-        )
-        self.assertEqual(response.context['page_obj'][0].group, self.group)
         self.assertEqual(response.context['page_obj'][0].text, self.post.text)
-        self.assertEqual(response.context['page_obj'][0].author, self.author)
+        self.assertEqual(
+            response.context['page_obj'][0].author, self.post.author
+        )
         self.assertEqual(
             response.context['page_obj'][0].image, self.post.image
         )
+
+    def test_group_list_page_show_correct_context_in_group_fields(self):
+        """Шаблон group_list сформирован с правильным контекстом."""
+        response = self.author_client.get(
+            reverse(cs.GROUP_URL, kwargs={'slug': self.group.slug})
+        )
+        self.assertEqual(
+            response.context['group'].title, self.group.title
+        )
+        self.assertEqual(
+            response.context['group'].description, self.group.description
+        )
+        self.assertEqual(response.context['group'], self.group)
 
     def test_check_work_cache(self):
         """Проверка работы кэша на главной странице."""
