@@ -26,6 +26,8 @@ SECRET_KEY = 'd%s!(+4drt3fqk%lnx6)%#rrq5py%%lvwxe(*qq1toe)ze1&#u'
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    'www.romanbespalov.pythonanywhere.com',
+    'romanbespalov.pythonanywhere.com',
     'localhost',
     '127.0.0.1',
     '[::1]',
@@ -36,6 +38,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'debug_toolbar',
     'about.apps.AboutConfig',
     'core.apps.CoreConfig',
     'users.apps.UsersConfig',
@@ -57,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'yatube.urls'
@@ -133,8 +137,15 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'posts:index'
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.yandex.ru'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = 'romanbespalov.97@yandex.ru'
+EMAIL_HOST_PASSWORD = 'nvvcxfqexvlympqo'
+DEFAULT_FROM_EMAIL = 'romanbespalov.97@yandex.ru'
 
 CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
@@ -146,3 +157,7 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
